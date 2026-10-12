@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#217346">
+<title>Excel Truyện</title>
+<style>
+:root{--green:#217346;--green2:#185c37;--line:#d9e0da;--bg:#f3f6f4;--muted:#66736a;--white:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:#17211a;font:15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:var(--green);color:white;padding:14px 14px 12px;position:sticky;top:0;z-index:5}
+.brand{display:flex;align-items:center;gap:10px;font-weight:750;font-size:21px}
+.brand-icon{border:1px solid #ffffff70;border-radius:7px;padding:5px 7px;font-size:18px}
+.subtitle{font-size:12px;opacity:.9;margin-top:5px}
+main{max-width:1050px;margin:auto;padding:12px;display:grid;gap:12px}
+.panel{background:white;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.panel-title{padding:12px 13px;font-weight:700;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.toolbar{display:flex;gap:8px;padding:10px;flex-wrap:wrap}
+input,button,select{font:inherit;border-radius:8px;min-height:42px}
+input,select{border:1px solid #cbd5cd;padding:9px 10px;background:white;color:inherit}
+input:focus,select:focus{outline:2px solid #94c8a6;outline-offset:1px}
+button{border:0;background:var(--green);color:white;padding:9px 12px;font-weight:650;cursor:pointer}
+button.secondary{background:#e9f1eb;color:var(--green2)}
+button.danger{background:#fff0ef;color:#a32d24}
+button:active{transform:scale(.99)}
+#search{flex:1;min-width:130px}
+.form-grid{display:grid;grid-template-columns:1fr;gap:8px;padding:0 10px 10px}
+.form-grid input{width:100%}
+.table-wrap{overflow:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th,td{border:1px solid var(--line);padding:9px 10px;text-align:left;vertical-align:middle}
+th{background:#eaf1eb;color:#344b39;font-size:12px;position:sticky;top:0}
+td{font-size:13px}
+td.url{max-width:230px;overflow-wrap:anywhere;color:#42634b}
+tr.selected td{background:#f0f8f1}
+tr{cursor:pointer}
+.row-actions{display:flex;gap:5px;white-space:nowrap}
+.small{font-size:12px;color:var(--muted);line-height:1.5}
+.badge{font-size:11px;background:#eaf1eb;color:#255d39;border-radius:999px;padding:4px 7px;white-space:nowrap}
+.reader-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px}
+.reader-head strong{flex:1;min-width:120px}
+#readerFrame{width:100%;height:55vh;min-height:340px;border:0;display:block;background:white}
+.reader-empty{height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--muted);gap:9px}
+.reader-empty .globe{font-size:40px}
+.note{padding:10px 13px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);line-height:1.5}
+.tabs{display:flex;gap:7px;padding:10px;border-bottom:1px solid var(--line);overflow:auto}
+.tab{background:#eef2ef;color:#35543c;white-space:nowrap}
+.tab.active{background:var(--green);color:white}
+footer{text-align:center;color:var(--muted);font-size:11px;padding:3px 10px 20px}
+@media(min-width:760px){main{grid-template-columns:minmax(320px, .9fr) minmax(380px,1.4fr);align-items:start}.list-panel{grid-column:1;grid-row:1}.reader-panel{grid-column:2;grid-row:1;position:sticky;top:95px}#readerFrame{height:70vh}.form-grid{grid-template-columns:1fr 1fr}.form-grid .full{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="brand-icon">▦</span><span>Excel Truyện</span></div>
+  <div class="subtitle">Quản lý website truyện trong giao diện dạng bảng tính</div>
+</header>
+<main>
+  <section class="panel list-panel">
+    <div class="panel-title"><span>Danh sách website</span><span class="badge" id="count">0 website</span></div>
+    <div class="tabs">
+      <button class="tab active" data-filter="all">Tất cả</button>
+      <button class="tab" data-filter="favorite">★ Yêu thích</button>
+    </div>
+    <div class="toolbar">
+      <input id="search" type="search" placeholder="Tìm tên truyện hoặc website…">
+      <button id="toggleForm">＋ Thêm</button>
+    </div>
+    <form id="addForm" hidden>
+      <div class="form-grid">
+        <input id="siteName" placeholder="Tên truyện / website" required maxlength="100">
+        <input id="siteUrl" placeholder="https://example.com" type="url" required>
+        <input id="siteNote" class="full" placeholder="Ghi chú (tùy chọn)" maxlength="200">
+        <button class="full" type="submit">Lưu vào bảng</button>
+      </div>
+    </form>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>STT</th><th>Tên truyện / website</th><th>Địa chỉ</th><th>★</th><th>Thao tác</th></tr></thead>
+        <tbody id="siteRows"></tbody>
+      </table>
+    </div>
+    <div class="toolbar">
+      <button class="secondary" id="exportBtn">Xuất danh sách JSON</button>
+      <button class="secondary" id="importBtn">Nhập danh sách</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+    <div class="note">Danh sách được lưu cục bộ trong trình duyệt trên thiết bị này. Hãy xuất JSON để sao lưu hoặc chuyển sang thiết bị khác.</div>
+  </section>
+
+  <section class="panel reader-panel">
+    <div class="panel-title"><span>Khung đọc truyện</span><span class="badge" id="readerStatus">Chưa mở trang</span></div>
+    <div class="reader-head">
+      <strong id="readerTitle">Chọn một website trong bảng</strong>
+      <button id="openExternal" class="secondary" disabled>Mở Safari ↗</button>
+    </div>
+    <div id="emptyState" class="reader-empty">
+      <div class="globe">🌐</div>
+      <strong>Website sẽ hiển thị tại đây</strong>
+      <span>Chạm vào một dòng trong bảng để thử mở website.</span>
+    </div>
+    <iframe id="readerFrame" title="Khung website truyện" hidden referrerpolicy="strict-origin-when-cross-origin"></iframe>
+    <div class="note">Một số website chặn nhúng trong iframe. Nếu khung trống hoặc báo lỗi, hãy nhấn “Mở Safari”. Ứng dụng không vượt qua cơ chế bảo vệ của website.</div>
+  </section>
+</main>
+<footer>Excel Truyện · Bản mẫu chạy trên trình duyệt · Không gửi danh sách website lên máy chủ</footer>
+<script>
+const STORAGE_KEY = 'excel-truyen-sites-v1';
+const defaults = [
+  {id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+'a', name:'Website truyện mẫu 1', url:'https://example.com', note:'Thay bằng website truyện bạn dùng', favorite:false},
+  {id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+'b', name:'Website truyện mẫu 2', url:'https://example.org', note:'Thay bằng website khác', favorite:false}
+];
+let sites = [];
+let filter = 'all';
+let currentUrl = '';
+let currentId = null;
+const $ = id => document.getElementById(id);
+function uid(){return crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random().toString(16).slice(2)}
+function safeUrl(raw){
+  try {
+    let value = raw.trim();
+    if(!/^https?:\/\//i.test(value)) value = 'https://' + value;
+    const u = new URL(value);
+    return ['http:','https:'].includes(u.protocol) ? u.href : null;
+  } catch(e){return null}
+}
+function save(){try{localStorage.setItem(STORAGE_KEY, JSON.stringify(sites))}catch(e){alert('Không thể lưu dữ liệu trong trình duyệt. Hãy xuất danh sách JSON để sao lưu.')}}
+function load(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    sites = Array.isArray(saved) ? saved : defaults;
+  }catch(e){sites = defaults}
+  render();
+}
+function render(){
+  const q = $('search').value.toLowerCase().trim();
+  const visible = sites.filter(s => (filter !== 'favorite' || s.favorite) && (s.name+' '+s.url+' '+(s.note||'')).toLowerCase().includes(q));
+  $('count').textContent = sites.length+' website';
+  const body = $('siteRows');
+  body.replaceChildren();
+  if(!visible.length){
+    const tr=document.createElement('tr'), td=document.createElement('td');
+    td.colSpan=5; td.textContent='Chưa có mục phù hợp. Nhấn “＋ Thêm” để thêm website.'; td.className='small'; tr.appendChild(td); body.appendChild(tr);
+  }
+  visible.forEach((s, i) => {
+    const tr=document.createElement('tr');
+    if(s.id===currentId) tr.classList.add('selected');
+    tr.addEventListener('click', e=>{if(!e.target.closest('button')) openSite(s.id)});
+    const vals=[String(i+1),s.name,s.url,s.favorite?'★':'☆'];
+    vals.forEach((v,j)=>{const td=document.createElement('td');td.textContent=v;if(j===2)td.className='url';if(j===3){td.style.color=s.favorite?'#b07b00':'#758078';td.style.fontSize='18px'}tr.appendChild(td)});
+    const actions=document.createElement('td'), wrap=document.createElement('div');wrap.className='row-actions';
+    const fav=document.createElement('button');fav.className='secondary';fav.textContent=s.favorite?'★':'☆';fav.title='Yêu thích';
+    fav.addEventListener('click',e=>{e.stopPropagation();s.favorite=!s.favorite;save();render()});
+    const edit=document.createElement('button');edit.className='secondary';edit.textContent='Sửa';
+    edit.addEventListener('click',e=>{e.stopPropagation();editSite(s.id)});
+    const del=document.createElement('button');del.className='danger';del.textContent='Xóa';
+    del.addEventListener('click',e=>{e.stopPropagation();if(confirm('Xóa “'+s.name+'” khỏi danh sách?')){sites=sites.filter(x=>x.id!==s.id);if(currentId===s.id)closeReader();save();render()}});
+    wrap.append(fav,edit,del);actions.appendChild(wrap);tr.appendChild(actions);body.appendChild(tr);
+  });
+}
+function openSite(id){
+  const s=sites.find(x=>x.id===id);if(!s)return;
+  currentId=id;currentUrl=s.url;
+  $('readerTitle').textContent=s.name;
+  $('readerStatus').textContent='Đang mở thử';
+  $('openExternal').disabled=false;
+  $('emptyState').hidden=true;
+  $('readerFrame').hidden=false;
+  $('readerFrame').src=s.url;
+  render();
+}
+function closeReader(){
+  currentId=null;currentUrl='';
+  $('readerTitle').textContent='Chọn một website trong bảng';
+  $('readerStatus').textContent='Chưa mở trang';
+  $('openExternal').disabled=true;
+  $('readerFrame').src='about:blank';$('readerFrame').hidden=true;$('emptyState').hidden=false;
+}
+function editSite(id){
+  const s=sites.find(x=>x.id===id);if(!s)return;
+  const name=prompt('Tên website:',s.name);if(name===null)return;
+  const raw=prompt('Địa chỉ website:',s.url);if(raw===null)return;
+  const url=safeUrl(raw);if(!url){alert('Địa chỉ không hợp lệ.');return}
+  const note=prompt('Ghi chú (có thể để trống):',s.note||'');if(note===null)return;
+  s.name=name.trim()||s.name;s.url=url;s.note=note.trim();
+  if(currentId===id)openSite(id);
+  save();render();
+}
+$('toggleForm').addEventListener('click',()=>{$('addForm').hidden=!$('addForm').hidden;if(!$('addForm').hidden)$('siteName').focus()});
+$('addForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const name=$('siteName').value.trim(), url=safeUrl($('siteUrl').value);
+  if(!url){alert('Vui lòng nhập URL bắt đầu bằng http:// hoặc https://');return}
+  sites.push({id:uid(),name:name||new URL(url).hostname,url,note:$('siteNote').value.trim(),favorite:false});
+  save();render();$('addForm').reset();$('addForm').hidden=true;
+});
+$('search').addEventListener('input',render);
+document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{
+  filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b));render();
+}));
+$('openExternal').addEventListener('click',()=>{if(currentUrl)window.open(currentUrl,'_blank','noopener,noreferrer')});
+$('exportBtn').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify(sites,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='excel-truyen-backup.json';a.click();URL.revokeObjectURL(a.href);
+});
+$('importBtn').addEventListener('click',()=>$('importFile').click());
+$('importFile').addEventListener('change',async e=>{
+  const file=e.target.files[0];if(!file)return;
+  try{
+    const data=JSON.parse(await file.text());
+    if(!Array.isArray(data)||!data.every(s=>s&&typeof s.name==='string'&&typeof s.url==='string'&&safeUrl(s.url))){throw Error('invalid')}
+    if(confirm('Thay danh sách hiện tại bằng '+data.length+' website trong file?')){
+      sites=data.map(s=>({id:uid(),name:s.name,url:safeUrl(s.url),note:String(s.note||''),favorite:!!s.favorite}));
+      save();render();
+    }
+  }catch(err){alert('File JSON không đúng định dạng danh sách Excel Truyện.')}
+  e.target.value='';
+});
+load();
+</script>
+</body>
+</html>
